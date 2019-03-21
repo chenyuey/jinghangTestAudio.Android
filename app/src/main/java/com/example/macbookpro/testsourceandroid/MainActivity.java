@@ -2,6 +2,7 @@ package com.example.macbookpro.testsourceandroid;
 
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,6 +10,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.example.macbookpro.testsourceandroid.Util.SystemUtil;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.parse.FunctionCallback;
 import com.parse.Parse;
 import com.parse.ParseCloud;
@@ -23,14 +25,64 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.extractor.ExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
+import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
+
 public class MainActivity extends AppCompatActivity {
 
+    SimpleExoPlayerView mExoPlayerView;
+    private SimpleExoPlayer exoPlayer;
+    private MediaSource videoSource;
+//    private DefaultBandwidthMeter bandwidthMeter;
+
     public MediaPlayer mediaPlayer;
+
+    private void initExoPlayer(){
+        //1. 创建一个默认的 TrackSelector
+        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+        TrackSelection.Factory videoTackSelectionFactory =
+                new AdaptiveTrackSelection.Factory(bandwidthMeter);
+        TrackSelector trackSelector =
+                new DefaultTrackSelector(videoTackSelectionFactory);
+        //2.创建ExoPlayer
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(MainActivity.this, trackSelector);
+        //3.创建SimpleExoPlayerView
+        mExoPlayerView = findViewById(R.id.exo_player);
+        //4.为SimpleExoPlayer设置播放器
+        mExoPlayerView.setPlayer(exoPlayer);
+        mExoPlayerView.setUseController(false);
+        exoPlayer.setPlayWhenReady(true);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //创建视频播放器
+        initExoPlayer();
+
         //创建meidiaPlayer
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -53,7 +105,16 @@ public class MainActivity extends AppCompatActivity {
         startBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.e("start","========fetchTestJob before=======");
                 fetchTestJob();
+//                DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
+//                        Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
+//                ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+//                videoSource=new ExtractorMediaSource(Uri.parse("https://cms-1255803335.cos.ap-beijing.myqcloud.com/01ef4ede3e42dc7cb752fe2d2c300a3d_mH4d4gg61R.mp4"),
+//                        mediaDataSourceFactory, extractorsFactory, null, null);
+//                exoPlayer.prepare(videoSource);
+//                exoPlayer.setPlayWhenReady(true);
+
             }
         });
     }
@@ -70,12 +131,22 @@ public class MainActivity extends AppCompatActivity {
                 uploadTestReportToParseServer(mediaId,mediaURL,false,e.toString());
             }
         }else if (mediaType.equals("video")){
-            try {
-                mediaPlayer.setDataSource(mediaURL);
-                mediaPlayer.prepare();
-            } catch (Exception e) {
-                Log.e("video error",e.toString());
-            }
+
+            DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
+                    Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
+            ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+            videoSource=new ExtractorMediaSource(Uri.parse("https://cms-1255803335.cos.ap-beijing.myqcloud.com/01ef4ede3e42dc7cb752fe2d2c300a3d_mH4d4gg61R.mp4"),
+                    mediaDataSourceFactory, extractorsFactory, null, null);
+            exoPlayer.prepare(videoSource);
+            exoPlayer.setPlayWhenReady(true);
+
+//            try {
+//
+//                mediaPlayer.setDataSource(mediaURL);
+//                mediaPlayer.prepare();
+//            } catch (Exception e) {
+//                Log.e("video error",e.toString());
+//            }
         }
 
     }
@@ -93,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
         dicParameters.put("success", success);
         ParseCloud.callFunctionInBackground("uploadTestReport", dicParameters, new FunctionCallback<HashMap<String, String>>() {
             public void done(HashMap<String, String> response, ParseException e) {
-                Log.e("response==uploadTestReport:",response.toString());
+                Log.e("uploadTestReport:",response.toString());
                 if (e == null) {
                 } else {
                 }
@@ -109,11 +180,14 @@ public class MainActivity extends AppCompatActivity {
         dicParameters.put("equipment", dicEquipmentInfo);
         ParseCloud.callFunctionInBackground("fetchTestJob", dicParameters, new FunctionCallback<HashMap<String, String>>() {
             public void done(HashMap<String, String> response, ParseException e) {
+                Log.e("tag====:",response.toString());
                 if (e == null) {
+                    Log.e("tag==fetchTestJob===:",response.toString());
                     //开始播放
                     startPlayMediaWithURL(response);
-                    Log.e("tag=====:",response.toString());
+
                 } else {
+                    Log.e("tag==fetchTestJob=err=:",e.toString());
                 }
             }
         });
