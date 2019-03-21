@@ -132,21 +132,21 @@ public class MainActivity extends AppCompatActivity {
             }
         }else if (mediaType.equals("video")){
 
-            DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
-                    Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
-            ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-            videoSource=new ExtractorMediaSource(Uri.parse("https://cms-1255803335.cos.ap-beijing.myqcloud.com/01ef4ede3e42dc7cb752fe2d2c300a3d_mH4d4gg61R.mp4"),
-                    mediaDataSourceFactory, extractorsFactory, null, null);
-            exoPlayer.prepare(videoSource);
-            exoPlayer.setPlayWhenReady(true);
+//            DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
+//                    Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
+//            ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+//            videoSource=new ExtractorMediaSource(Uri.parse("https://cms-1255803335.cos.ap-beijing.myqcloud.com/01ef4ede3e42dc7cb752fe2d2c300a3d_mH4d4gg61R.mp4"),
+//                    mediaDataSourceFactory, extractorsFactory, null, null);
+//            exoPlayer.prepare(videoSource);
+//            exoPlayer.setPlayWhenReady(true);
 
-//            try {
-//
-//                mediaPlayer.setDataSource(mediaURL);
-//                mediaPlayer.prepare();
-//            } catch (Exception e) {
-//                Log.e("video error",e.toString());
-//            }
+            try {
+
+                mediaPlayer.setDataSource(mediaURL);
+                mediaPlayer.prepare();
+            } catch (Exception e) {
+                Log.e("video error",e.toString());
+            }
         }
 
     }
@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
         dicParameters.put("equipment", dicEquipmentInfo);
         ParseCloud.callFunctionInBackground("fetchTestJob", dicParameters, new FunctionCallback<HashMap<String, String>>() {
             public void done(HashMap<String, String> response, ParseException e) {
-                Log.e("tag====:",response.toString());
+//                Log.e("tag====:",response.toString());
                 if (e == null) {
                     Log.e("tag==fetchTestJob===:",response.toString());
                     //开始播放
