@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
 
 import com.example.macbookpro.testsourceandroid.Util.SystemUtil;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
@@ -56,8 +57,10 @@ public class MainActivity extends AppCompatActivity {
     private SimpleExoPlayer exoPlayer;
     private MediaSource videoSource;
 //    private DefaultBandwidthMeter bandwidthMeter;
+    private HashMap<String, String> mediaInfo;
 
     public MediaPlayer mediaPlayer;
+    private SeekBar main_seekBar;
 
     private void initExoPlayer(){
         //1. 创建一个默认的 TrackSelector
@@ -75,14 +78,12 @@ public class MainActivity extends AppCompatActivity {
         mExoPlayerView.setUseController(false);
         exoPlayer.setPlayWhenReady(true);
     }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        //创建视频播放器
-        initExoPlayer();
-
+    private void createMediaPlayer(final String mediaURL,final String mediaId){
+        if (mediaPlayer != null){
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
         //创建meidiaPlayer
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -96,10 +97,34 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mediaPlayer) {
-                mediaPlayer.start();
                 Log.e("audio","=========onPrepared==========");
+                mediaPlayer.start();
+                int lengthOfTime = mediaPlayer.getDuration();
+                main_seekBar.setProgress(0);
+                main_seekBar.setMax(lengthOfTime);
+                if (lengthOfTime > 5){
+                    mediaPlayer.seekTo(lengthOfTime - 5);
+                    main_seekBar.setProgress(lengthOfTime - 5/lengthOfTime);
+                }
             }
         });
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mediaPlayer) {
+                uploadTestReportToParseServer(mediaId,mediaURL,true,"");
+            }
+        });
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        //创建视频播放器
+        initExoPlayer();
+
+        main_seekBar = (SeekBar) findViewById(R.id.main_seekBar);
+
 
         Button startBtn = findViewById(R.id.start_btn);
         startBtn.setOnClickListener(new View.OnClickListener() {
@@ -111,10 +136,13 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     public void startPlayMediaWithURL(HashMap<String, String> response){
+
         String mediaURL = response.get("mediaUrl");
         String mediaType = response.get("mediaType");
         String mediaId = response.get("mediaId");
+
         if (mediaType.equals("audio")) {//音频
+            createMediaPlayer(mediaURL,mediaId);
             try {
                 mediaPlayer.setDataSource(mediaURL);
                 mediaPlayer.prepare();

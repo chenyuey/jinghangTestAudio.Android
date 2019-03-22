@@ -20,6 +20,15 @@
             android:layout_height="186dp"
             />
 
+        <SeekBar
+            android:id="@+id/main_seekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="212dp"
+            android:layout_weight="0.04" />
+
+
         <Button
             android:id="@+id/start_btn"
             android:layout_width="wrap_content"
