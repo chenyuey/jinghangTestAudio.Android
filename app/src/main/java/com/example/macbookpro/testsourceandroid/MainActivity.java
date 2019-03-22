@@ -1,8 +1,11 @@
 package com.example.macbookpro.testsourceandroid;
 
+import android.app.Activity;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,8 +25,13 @@ import com.parse.FunctionCallback;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 
 import com.google.android.exoplayer2.C;
@@ -102,10 +110,11 @@ public class MainActivity extends AppCompatActivity {
                 int lengthOfTime = mediaPlayer.getDuration();
                 main_seekBar.setProgress(0);
                 main_seekBar.setMax(lengthOfTime);
-                if (lengthOfTime > 5){
-                    mediaPlayer.seekTo(lengthOfTime - 5);
-                    main_seekBar.setProgress(lengthOfTime - 5/lengthOfTime);
+                if (lengthOfTime > 2000){
+                    mediaPlayer.seekTo(lengthOfTime - 2000);
+                    main_seekBar.setProgress((lengthOfTime - 2000)/lengthOfTime);
                 }
+                updateProgressBar();
             }
         });
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -144,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
         if (mediaType.equals("audio")) {//音频
             createMediaPlayer(mediaURL,mediaId);
             try {
+                //"https://cms-1255803335.cos.ap-beijing.myqcloud.com/f39752c09f1d6428531c66df4a14bee9_X8UUzn21Pi.mp4"
                 mediaPlayer.setDataSource(mediaURL);
                 mediaPlayer.prepare();
             } catch (Exception e) {
@@ -196,10 +206,13 @@ public class MainActivity extends AppCompatActivity {
         dicParameters.put("equipment", dicEquipmentInfo);
         ParseCloud.callFunctionInBackground("fetchTestJob", dicParameters, new FunctionCallback<HashMap<String, String>>() {
             public void done(HashMap<String, String> response, ParseException e) {
-//                Log.e("tag====:",response.toString());
                 if (e == null) {
-                    Log.e("tag==fetchTestJob===:",response.toString());
                     //开始播放
+                    if (timer != null) {
+                        main_seekBar.setProgress(0);
+                        timer.cancel();
+                        timer = null;
+                    }
                     startPlayMediaWithURL(response);
 
                 } else {
@@ -208,4 +221,44 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    // 开启线程，更新播放进度
+    private void updateProgressBar() {
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                Message message = new Message();
+                message.what = 100;
+                message.obj = System.currentTimeMillis();
+                myHandler.sendMessage(message);
+            }
+        };
+        timer = new Timer();
+        // 参数：
+        // 1000，延时1秒后执行。
+        // 2000，每隔2秒执行1次task。
+        timer.schedule(task, 0, 1000);
+    }
+    Timer timer;
+    MyHandler myHandler = new MyHandler(MainActivity.this);
+
+    private static class MyHandler extends Handler {
+        private WeakReference<Activity> mActivity;
+
+        MyHandler(Activity activity) {
+            mActivity = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            MainActivity currentActivity = (MainActivity) mActivity.get();
+
+            switch (msg.what) {
+                case 100:
+                    if (currentActivity.mediaPlayer != null)
+                        currentActivity.main_seekBar.setProgress(currentActivity.mediaPlayer.getCurrentPosition() * 1000 / currentActivity.mediaPlayer.getDuration());
+            }
+        }
+    }
+
 }
