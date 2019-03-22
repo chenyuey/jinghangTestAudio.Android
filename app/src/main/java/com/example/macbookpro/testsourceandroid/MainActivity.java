@@ -15,6 +15,8 @@ import android.widget.SeekBar;
 
 import com.example.macbookpro.testsourceandroid.Util.SystemUtil;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.parse.FunctionCallback;
 import com.parse.Parse;
 import com.parse.ParseCloud;
@@ -69,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
     public MediaPlayer mediaPlayer;
     private SeekBar main_seekBar;
+    private Boolean isTesting;
 
     private void initExoPlayer(){
         //1. 创建一个默认的 TrackSelector
@@ -85,7 +88,68 @@ public class MainActivity extends AppCompatActivity {
         mExoPlayerView.setPlayer(exoPlayer);
         mExoPlayerView.setUseController(false);
         exoPlayer.setPlayWhenReady(true);
+        exoPlayer.addListener(new Player.EventListener() {
+            @Override
+            public void onTimelineChanged(Timeline timeline, Object manifest) {
+
+            }
+
+            @Override
+            public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+
+            }
+
+            @Override
+            public void onLoadingChanged(boolean isLoading) {
+
+            }
+
+            @Override
+            public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+                if(playbackState==ExoPlayer.STATE_ENDED){
+                    String mediaURL = mediaInfo.get("mediaUrl");
+                    String mediaId = mediaInfo.get("mediaId");
+                    uploadTestReportToParseServer(mediaId,mediaURL,true,"");
+                }
+            }
+
+            @Override
+            public void onRepeatModeChanged(int repeatMode) {
+
+            }
+
+            @Override
+            public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
+
+            }
+
+            @Override
+            public void onPlayerError(ExoPlaybackException error) {
+                Log.e("onPlayerError",error.toString());
+                String mediaURL = mediaInfo.get("mediaUrl");
+                String mediaId = mediaInfo.get("mediaId");
+                uploadTestReportToParseServer(mediaId,mediaURL,false,error.toString());
+
+            }
+
+            @Override
+            public void onPositionDiscontinuity(int reason) {
+
+            }
+
+            @Override
+            public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
+
+            }
+
+            @Override
+            public void onSeekProcessed() {
+
+            }
+        });
+
     }
+    //创建音频播放器 mediaplayer
     private void createMediaPlayer(final String mediaURL,final String mediaId){
         if (mediaPlayer != null){
             mediaPlayer.stop();
@@ -134,18 +198,26 @@ public class MainActivity extends AppCompatActivity {
 
         main_seekBar = (SeekBar) findViewById(R.id.main_seekBar);
 
-
+        isTesting = false;
         Button startBtn = findViewById(R.id.start_btn);
         startBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Button currentBtn = (Button)view;
+                if (currentBtn.getText().equals("开始测试")){
+                    isTesting = true;
+                    currentBtn.setText("关闭测试");
+                }else {
+                    isTesting = false;
+                    currentBtn.setText("开始测试");
+                }
                 Log.e("start","========fetchTestJob before=======");
                 fetchTestJob();
             }
         });
     }
     public void startPlayMediaWithURL(HashMap<String, String> response){
-
+        mediaInfo = response;
         String mediaURL = response.get("mediaUrl");
         String mediaType = response.get("mediaType");
         String mediaId = response.get("mediaId");
@@ -153,7 +225,6 @@ public class MainActivity extends AppCompatActivity {
         if (mediaType.equals("audio")) {//音频
             createMediaPlayer(mediaURL,mediaId);
             try {
-                //"https://cms-1255803335.cos.ap-beijing.myqcloud.com/f39752c09f1d6428531c66df4a14bee9_X8UUzn21Pi.mp4"
                 mediaPlayer.setDataSource(mediaURL);
                 mediaPlayer.prepare();
             } catch (Exception e) {
@@ -162,8 +233,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }else if (mediaType.equals("video")){
             try {
-                DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
-                        Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
+                String userAgent = Util.getUserAgent(MainActivity.this, "TestSourceAndroid");
+                DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
+                        userAgent,
+                        null /* listener */,
+                        DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+                        DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
+                        false /* allowCrossProtocolRedirects */
+                );
+                DefaultDataSourceFactory mediaDataSourceFactory = new DefaultDataSourceFactory(
+                        MainActivity.this,
+                        null,
+                        httpDataSourceFactory
+                );
+
                 ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
                 videoSource=new ExtractorMediaSource(Uri.parse(mediaURL), mediaDataSourceFactory, extractorsFactory, null, null);
                 exoPlayer.prepare(videoSource);
@@ -179,13 +262,13 @@ public class MainActivity extends AppCompatActivity {
         Map<String, String> dicEquipmentInfo = new HashMap<String, String>();
         dicEquipmentInfo.put("system_version", "Android"+SystemUtil.getSystemVersion());
         dicEquipmentInfo.put("player_name", "MediaPlayer");
-        dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel());
+        dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel()+"test");
 
         Map<String, Object> dicParameters = new HashMap<String, Object>();
         dicParameters.put("equipment", dicEquipmentInfo);
         dicParameters.put("mediaId", mediaId);
         dicParameters.put("mediaUrl", mediaURL);
-        dicParameters.put("errorMsg", errorMsg);
+        dicParameters.put("error", errorMsg);
         dicParameters.put("success", success);
         ParseCloud.callFunctionInBackground("uploadTestReport", dicParameters, new FunctionCallback<HashMap<String, String>>() {
             public void done(HashMap<String, String> response, ParseException e) {
@@ -198,28 +281,30 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     public void fetchTestJob(){
-        Map<String, String> dicEquipmentInfo = new HashMap<String, String>();
-        dicEquipmentInfo.put("system_version", "Android"+SystemUtil.getSystemVersion());
-        dicEquipmentInfo.put("player_name", "MediaPlayer");
-        dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel());
-        Map<String, Map<String, String>> dicParameters = new HashMap<String, Map<String, String>>();
-        dicParameters.put("equipment", dicEquipmentInfo);
-        ParseCloud.callFunctionInBackground("fetchTestJob", dicParameters, new FunctionCallback<HashMap<String, String>>() {
-            public void done(HashMap<String, String> response, ParseException e) {
-                if (e == null) {
-                    //开始播放
-                    if (timer != null) {
-                        main_seekBar.setProgress(0);
-                        timer.cancel();
-                        timer = null;
-                    }
-                    startPlayMediaWithURL(response);
+        if (isTesting == true){
+            Map<String, String> dicEquipmentInfo = new HashMap<String, String>();
+            dicEquipmentInfo.put("system_version", "Android"+SystemUtil.getSystemVersion());
+            dicEquipmentInfo.put("player_name", "MediaPlayer");
+            dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel()+"test");
+            Map<String, Map<String, String>> dicParameters = new HashMap<String, Map<String, String>>();
+            dicParameters.put("equipment", dicEquipmentInfo);
+            ParseCloud.callFunctionInBackground("fetchTestJob", dicParameters, new FunctionCallback<HashMap<String, String>>() {
+                public void done(HashMap<String, String> response, ParseException e) {
+                    if (e == null) {
+                        //开始播放
+                        if (timer != null) {
+                            main_seekBar.setProgress(0);
+                            timer.cancel();
+                            timer = null;
+                        }
+                        startPlayMediaWithURL(response);
 
-                } else {
-                    Log.e("tag==fetchTestJob=err=:",e.toString());
+                    } else {
+                        Log.e("tag==fetchTestJob=err=:",e.toString());
+                    }
                 }
-            }
-        });
+            });
+        }
     }
     // 开启线程，更新播放进度
     private void updateProgressBar() {
