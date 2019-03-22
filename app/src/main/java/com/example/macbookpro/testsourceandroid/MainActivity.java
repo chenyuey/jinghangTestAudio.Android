@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         exoPlayer.addListener(new Player.EventListener() {
             @Override
             public void onTimelineChanged(Timeline timeline, Object manifest) {
-
+                Log.e("onTimelineChanged",timeline+"");
             }
 
             @Override
@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onLoadingChanged(boolean isLoading) {
-
+                Log.e("====","onLoadingChanged");
             }
 
             @Override
@@ -134,12 +134,12 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onPositionDiscontinuity(int reason) {
-
+                Log.e("====","onPositionDiscontinuity");
             }
 
             @Override
             public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {
-
+                Log.e("====","onPlaybackParametersChanged");
             }
 
             @Override
@@ -207,12 +207,32 @@ public class MainActivity extends AppCompatActivity {
                 if (currentBtn.getText().equals("开始测试")){
                     isTesting = true;
                     currentBtn.setText("关闭测试");
+                    fetchTestJob();
+
+//                    String userAgent = Util.getUserAgent(MainActivity.this, "TestSourceAndroid");
+//                    DefaultHttpDataSourceFactory httpDataSourceFactory = new DefaultHttpDataSourceFactory(
+//                            userAgent,
+//                            null /* listener */,
+//                            DefaultHttpDataSource.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+//                            DefaultHttpDataSource.DEFAULT_READ_TIMEOUT_MILLIS,
+//                            false /* allowCrossProtocolRedirects */
+//                    );
+//                    DefaultDataSourceFactory mediaDataSourceFactory = new DefaultDataSourceFactory(
+//                            MainActivity.this,
+//                            null,
+//                            httpDataSourceFactory
+//                    );
+//
+//                    ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+//                    videoSource=new ExtractorMediaSource(Uri.parse("http://39.98.203.0:8123/swaggerUI/mc_aac.mp4"), mediaDataSourceFactory, extractorsFactory, null, null);
+//                    exoPlayer.prepare(videoSource);
+//                    exoPlayer.setPlayWhenReady(true);
+
+
                 }else {
                     isTesting = false;
                     currentBtn.setText("开始测试");
                 }
-                Log.e("start","========fetchTestJob before=======");
-                fetchTestJob();
             }
         });
     }
