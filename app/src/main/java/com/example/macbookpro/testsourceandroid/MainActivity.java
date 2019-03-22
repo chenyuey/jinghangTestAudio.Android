@@ -107,14 +107,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Log.e("start","========fetchTestJob before=======");
                 fetchTestJob();
-//                DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
-//                        Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
-//                ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-//                videoSource=new ExtractorMediaSource(Uri.parse("https://cms-1255803335.cos.ap-beijing.myqcloud.com/01ef4ede3e42dc7cb752fe2d2c300a3d_mH4d4gg61R.mp4"),
-//                        mediaDataSourceFactory, extractorsFactory, null, null);
-//                exoPlayer.prepare(videoSource);
-//                exoPlayer.setPlayWhenReady(true);
-
             }
         });
     }
@@ -131,21 +123,16 @@ public class MainActivity extends AppCompatActivity {
                 uploadTestReportToParseServer(mediaId,mediaURL,false,e.toString());
             }
         }else if (mediaType.equals("video")){
-
-//            DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
-//                    Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
-//            ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-//            videoSource=new ExtractorMediaSource(Uri.parse("https://cms-1255803335.cos.ap-beijing.myqcloud.com/01ef4ede3e42dc7cb752fe2d2c300a3d_mH4d4gg61R.mp4"),
-//                    mediaDataSourceFactory, extractorsFactory, null, null);
-//            exoPlayer.prepare(videoSource);
-//            exoPlayer.setPlayWhenReady(true);
-
             try {
-
-                mediaPlayer.setDataSource(mediaURL);
-                mediaPlayer.prepare();
+                DataSource.Factory mediaDataSourceFactory = new DefaultDataSourceFactory(MainActivity.this,
+                        Util.getUserAgent(MainActivity.this, "TestSourceAndroid"));
+                ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+                videoSource=new ExtractorMediaSource(Uri.parse(mediaURL), mediaDataSourceFactory, extractorsFactory, null, null);
+                exoPlayer.prepare(videoSource);
+                exoPlayer.setPlayWhenReady(true);
             } catch (Exception e) {
                 Log.e("video error",e.toString());
+                uploadTestReportToParseServer(mediaId,mediaURL,false,e.toString());
             }
         }
 
@@ -166,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
             public void done(HashMap<String, String> response, ParseException e) {
                 Log.e("uploadTestReport:",response.toString());
                 if (e == null) {
+                    fetchTestJob();
                 } else {
                 }
             }
