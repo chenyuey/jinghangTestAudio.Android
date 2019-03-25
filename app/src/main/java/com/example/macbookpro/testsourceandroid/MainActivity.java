@@ -282,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
         Map<String, String> dicEquipmentInfo = new HashMap<String, String>();
         dicEquipmentInfo.put("system_version", "Android"+SystemUtil.getSystemVersion());
         dicEquipmentInfo.put("player_name", "MediaPlayer");
-        dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel()+"test");
+        dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel());
 
         Map<String, Object> dicParameters = new HashMap<String, Object>();
         dicParameters.put("equipment", dicEquipmentInfo);
@@ -305,7 +305,7 @@ public class MainActivity extends AppCompatActivity {
             Map<String, String> dicEquipmentInfo = new HashMap<String, String>();
             dicEquipmentInfo.put("system_version", "Android"+SystemUtil.getSystemVersion());
             dicEquipmentInfo.put("player_name", "MediaPlayer");
-            dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel()+"test");
+            dicEquipmentInfo.put("equipment_name", SystemUtil.getSystemModel());
             Map<String, Map<String, String>> dicParameters = new HashMap<String, Map<String, String>>();
             dicParameters.put("equipment", dicEquipmentInfo);
             ParseCloud.callFunctionInBackground("fetchTestJob", dicParameters, new FunctionCallback<HashMap<String, String>>() {
